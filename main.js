@@ -1,7 +1,8 @@
 let classifier;
 let imageElement;
-let previousThumbnail;
-let lastResults = []; // Speichern der letzten Ergebnisse
+let imageThumbnail; // Thumbnail des aktuellen Bildes
+let correctClassifications = [];
+let incorrectClassifications = [];
 
 function setup() {
     noCanvas();
@@ -19,7 +20,7 @@ function modelLoaded() {
 function handleFile(file) {
     if (file.type === 'image') {
         imageElement = createImg(file.data, '').hide();
-        imageElement.size(400, 400); // Resize image to fit drop area
+        imageElement.size(400, 400); // Anpassung an feste Größe des Drop-Bereichs
         const dropArea = select('#dropArea');
         dropArea.html('');
         imageElement.parent(dropArea);
@@ -32,8 +33,7 @@ function handleFile(file) {
 function classifyImage() {
     if (imageElement) {
         classifier.classify(imageElement, gotResult);
-        imageElement.hide(); // Hide image in drop area after classification
-        select('#interactionButtons').style('display', 'block'); // Show interaction buttons
+        imageElement.hide(); // Verberge Bild im Drop-Bereich nach der Klassifikation
     }
 }
 
@@ -44,7 +44,11 @@ function gotResult(error, results) {
         const confidence = results[0].confidence * 100;
         const label = results[0].label;
 
-        lastResults = results; // Speichern der letzten Ergebnisse für die Interaktionslogik
+        // Thumbnail für Ergebnisbereich erstellen
+        imageThumbnail = createImg(imageElement.elt.src, '').hide();
+        imageThumbnail.size(100, 100); // Größe des Thumbnails anpassen
+        imageThumbnail.parent('imageSection'); // Thumbnail zum Ergebnisbereich hinzufügen
+        imageThumbnail.show();
 
         const resultContainer = select('#resultContainer');
         resultContainer.html(`
@@ -54,13 +58,33 @@ function gotResult(error, results) {
             </div>
             <p class="label-text" style="text-align: center;">${label}</p>
         `);
+        select('#interactionButtons').style('display', 'block'); // Zeige Interaktionsbuttons
     }
 }
 
 function markCorrect() {
-    // Logik zum Markieren als richtig klassifiziert
+    if (correctClassifications.length >= 3) correctClassifications.shift(); // Ältestes Element entfernen, wenn Liste voll
+    correctClassifications.push(imageThumbnail.elt.src);
+    updateClassificationsDisplay();
 }
 
 function markIncorrect() {
-    // Logik zum Markieren als falsch klassifiziert
+    if (incorrectClassifications.length >= 3) incorrectClassifications.shift(); // Ältestes Element entfernen, wenn Liste voll
+    incorrectClassifications.push(imageThumbnail.elt.src);
+    updateClassificationsDisplay();
 }
+
+function updateClassificationsDisplay() {
+    const correctSection = select('#classifiedCorrectly');
+    correctSection.html('<h2>Richtig klassifizierte Bilder</h2>');
+    correctClassifications.forEach(src => {
+        correctSection.child(createImg(src, '').size(100, 100));
+    });
+
+    const incorrectSection = select('#classifiedIncorrectly');
+    incorrectSection.html('<h2>Falsch klassifizierte Bilder</h2>');
+    incorrectClassifications.forEach(src => {
+        incorrectSection.child(createImg(src, '').size(100, 100));
+    });
+}
+
