@@ -21,11 +21,12 @@ function modelLoaded() {
 function handleFile(file) {
     if (file.type === 'image') {
         imageElement = createImg(file.data, '').hide();
-        imageElement.size(400, 400); // Anpassung an feste Größe des Drop-Bereichs
         const dropArea = select('#dropArea');
         dropArea.html('');
         imageElement.parent(dropArea);
         imageElement.show();
+        imageElement.style('max-width', '400px'); // Maximale Breite des Drop-Bereichs
+        imageElement.style('height', 'auto'); // Erhalt des Seitenverhältnisses
     } else {
         console.log('Nicht unterstützter Dateityp');
     }
@@ -45,12 +46,12 @@ function gotResult(error, results) {
         const confidence = results[0].confidence * 100;
         const label = results[0].label;
 
-        // Thumbnail für Ergebnisbereich erstellen und altes Thumbnail ersetzen
         if (imageThumbnail) {
           imageThumbnail.remove();
         }
-        imageThumbnail = createImg(imageElement.elt.src, '').hide();
-        imageThumbnail.size(100, 100); // Größe des Thumbnails anpassen
+        imageThumbnail = imageElement; // Verwenden des aktuellen Bildes als Thumbnail
+        imageThumbnail.style('max-width', '100px'); // Thumbnail-Größe anpassen
+        imageThumbnail.style('height', 'auto'); // Erhalt des Seitenverhältnisses
         imageThumbnail.parent('imageSection'); // Thumbnail zum Ergebnisbereich hinzufügen
         imageThumbnail.show();
 
@@ -66,7 +67,7 @@ function generateResultTable(label, confidence) {
     return `
         <table>
             <tr>
-                <td><img src="${imageElement.elt.src}" style="width: 100px;"></td>
+                <td><img src="${lastResult.src}" style="max-width: 100px; height: auto;"></td>
                 <td>
                     <div>${label}</div>
                     <div class="custom-bar">
