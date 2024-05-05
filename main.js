@@ -45,26 +45,23 @@ function gotResult(error, results) {
     } else {
         const confidence = results[0].confidence * 100;
         const label = results[0].label;
-
-        // Thumbnail für Ergebnisbereich erstellen und altes Thumbnail ersetzen
         if (imageThumbnail) {
-          imageThumbnail.remove();
+            imageThumbnail.remove();
         }
         imageThumbnail = imageElement; // Verwenden des aktuellen Bildes als Thumbnail
         imageThumbnail.style('max-width', '100px'); // Thumbnail-Größe anpassen
         imageThumbnail.style('height', 'auto'); // Erhalt des Seitenverhältnisses
         imageThumbnail.parent('imageSection'); // Thumbnail zum Ergebnisbereich hinzufügen
         imageThumbnail.show();
-
         lastResult = { src: imageElement.elt.src, label: label, confidence: confidence };
         const resultContainer = select('#resultContainer');
         resultContainer.html(generateResultTable(label, confidence));
-
         select('#interactionButtons').style('display', 'block'); // Zeige Interaktionsbuttons
     }
 }
 
 function generateResultTable(label, confidence) {
+    if (!lastResult) return '<p>No data available</p>';
     return `
         <table>
             <tr>
@@ -83,21 +80,29 @@ function generateResultTable(label, confidence) {
 
 function markCorrect() {
     if (correctClassifications.length >= 3) correctClassifications.shift();
-    correctClassifications.push(lastResult);
-    saveClassifiedCases();
-    updateClassificationsDisplay();
+    if (lastResult) {
+        correctClassifications.push(lastResult);
+        saveClassifiedCases();
+        updateClassificationsDisplay();
+    }
 }
 
 function markIncorrect() {
     if (incorrectClassifications.length >= 3) incorrectClassifications.shift();
-    incorrectClassifications.push(lastResult);
-    saveClassifiedCases();
-    updateClassificationsDisplay();
+    if (lastResult) {
+        incorrectClassifications.push(lastResult);
+        saveClassifiedCases();
+        updateClassificationsDisplay();
+    }
 }
 
 function saveClassifiedCases() {
-    localStorage.setItem('correctClassifications', JSON.stringify(correctClassifications));
-    localStorage.setItem('incorrectClassifications', JSON.stringify(incorrectClassifications));
+    try {
+        localStorage.setItem('correctClassifications', JSON.stringify(correctClassifications));
+        localStorage.setItem('incorrectClassifications', JSON.stringify(incorrectClassifications));
+    } catch (e) {
+        console.error('Error saving to localStorage', e);
+    }
 }
 
 function loadClassifiedCases() {
