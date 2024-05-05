@@ -9,21 +9,11 @@
 </head>
 <body>
     <h1>Bilderklassifikation mit MobileNet und p5.js</h1>
-    <div id="classifiedCorrectly">
-        <h2>Richtig klassifizierte Bilder</h2>
-    </div>
-    <div id="classifiedIncorrectly">
-        <h2>Falsch klassifizierte Bilder</h2>
-    </div>
-    <div id="dropArea">Ziehen Sie ein Bild hierher oder klicken Sie, um auszuwählen.</div>
+    <h2>Bitte ziehen Sie ein Bild hierher</h2>
+    <div id="dropArea"></div>
     <button id="classifyButton" onclick="classifyImage()">Classify</button>
-    <div id="interactionButtons" style="display: none;">
-        <button onclick="markCorrect()">Richtig</button>
-        <button onclick="markIncorrect()">Falsch</button>
-    </div>
     <div id="resultSection">
         <div id="imageSection"></div>
-        <div id="resultContainer"></div>
     </div>
     <script src="main.js"></script>
 </body>
