@@ -1,7 +1,6 @@
 let classifier;
 let imageElement;
-let imageThumbnail; // Thumbnail des aktuellen Bildes
-let lastResult; // Speichert das letzte Klassifikationsergebnis
+let imageThumbnail;
 let correctClassifications = [];
 let incorrectClassifications = [];
 
@@ -12,7 +11,6 @@ function setup() {
     dropArea.dragOver(() => dropArea.style('background-color', '#ccc'));
     dropArea.dragLeave(() => dropArea.style('background-color', '#fff'));
     dropArea.drop(handleFile, () => dropArea.style('background-color', '#fff'));
-    loadClassifiedCases(); // Lade gespeicherte Fälle beim Initialisieren
 }
 
 function modelLoaded() {
@@ -21,21 +19,23 @@ function modelLoaded() {
 
 function handleFile(file) {
     if (file.type === 'image') {
-        imageElement = createImg(file.data, '').hide();
-        imageElement.size(400, 400); // Anpassung an feste Größe des Drop-Bereichs
-        const dropArea = select('#dropArea');
-        dropArea.html('');
-        imageElement.parent(dropArea);
-        imageElement.show();
+        if (imageThumbnail) {
+            imageThumbnail.remove();
+        }
+        imageThumbnail = createImg(file.data, '').hide();
+        imageThumbnail.parent('dropArea');
+        imageThumbnail.style('max-width', '400px'); // Maximale Breite für das Thumbnail
+        imageThumbnail.style('height', 'auto'); // Erhalt des Seitenverhältnisses
+        imageThumbnail.show();
     } else {
         console.log('Nicht unterstützter Dateityp');
     }
 }
 
 function classifyImage() {
-    if (imageElement) {
-        classifier.classify(imageElement, gotResult);
-        imageElement.hide(); // Verberge Bild im Drop-Bereich nach der Klassifikation
+    if (imageThumbnail) {
+        classifier.classify(imageThumbnail, gotResult);
+        imageThumbnail.hide(); // Verberge Thumbnail im Drop-Bereich nach der Klassifikation
     }
 }
 
@@ -45,81 +45,48 @@ function gotResult(error, results) {
     } else {
         const confidence = results[0].confidence * 100;
         const label = results[0].label;
-        if (imageThumbnail) {
-            imageThumbnail.remove();
-        }
-        imageThumbnail = imageElement; // Verwenden des aktuellen Bildes als Thumbnail
-        imageThumbnail.style('max-width', '100px'); // Thumbnail-Größe anpassen
-        imageThumbnail.style('height', 'auto'); // Erhalt des Seitenverhältnisses
-        imageThumbnail.parent('imageSection'); // Thumbnail zum Ergebnisbereich hinzufügen
-        imageThumbnail.show();
-        lastResult = { src: imageElement.elt.src, label: label, confidence: confidence };
-        const resultContainer = select('#resultContainer');
-        resultContainer.html(generateResultTable(label, confidence));
-        select('#interactionButtons').style('display', 'block'); // Zeige Interaktionsbuttons
+
+        const data = {
+            src: imageThumbnail.elt.src,
+            label: label,
+            confidence: confidence
+        };
+
+        // Anzeige des Ergebnisses
+        const resultContainer = select('#imageSection');
+        resultContainer.html(`
+            <img src="${data.src}" style="max-width: 100px; height: auto;">
+            <p>${label} - ${Math.round(confidence)}%</p>
+        `);
+
+        // Füge die Klassifizierung zu den Listen hinzu
+        addClassificationResult(data);
     }
 }
 
-function generateResultTable(label, confidence) {
-    if (!lastResult) return '<p>No data available</p>';
-    return `
-        <table>
-            <tr>
-                <td><img src="${lastResult.src}" style="max-width: 100px; height: auto;"></td>
-                <td>
-                    <div>${label}</div>
-                    <div class="custom-bar">
-                        <div class="confidence-bar" style="width:${confidence * 4}px;"></div>
-                        <div class="confidence-text">${Math.round(confidence)}%</div>
-                    </div>
-                </td>
-            </tr>
-        </table>
-    `;
+function addClassificationResult(data) {
+    correctClassifications.unshift(data);
+    if (correctClassifications.length > 3) correctClassifications.pop();
+    incorrectClassifications.unshift(data);
+    if (incorrectClassifications.length > 3) incorrectClassifications.pop();
+
+    updateClassificationDisplay();
 }
 
-function markCorrect() {
-    if (correctClassifications.length >= 3) correctClassifications.shift();
-    if (lastResult) {
-        correctClassifications.push(lastResult);
-        saveClassifiedCases();
-        updateClassificationsDisplay();
-    }
+function updateClassificationDisplay() {
+    updateClassificationList('#classifiedCorrectly', correctClassifications);
+    updateClassificationList('#classifiedIncorrectly', incorrectClassifications);
 }
 
-function markIncorrect() {
-    if (incorrectClassifications.length >= 3) incorrectClassifications.shift();
-    if (lastResult) {
-        incorrectClassifications.push(lastResult);
-        saveClassifiedCases();
-        updateClassificationsDisplay();
-    }
-}
-
-function saveClassifiedCases() {
-    try {
-        localStorage.setItem('correctClassifications', JSON.stringify(correctClassifications));
-        localStorage.setItem('incorrectClassifications', JSON.stringify(incorrectClassifications));
-    } catch (e) {
-        console.error('Error saving to localStorage', e);
-    }
-}
-
-function loadClassifiedCases() {
-    correctClassifications = JSON.parse(localStorage.getItem('correctClassifications')) || [];
-    incorrectClassifications = JSON.parse(localStorage.getItem('incorrectClassifications')) || [];
-    updateClassificationsDisplay();
-}
-
-function updateClassificationsDisplay() {
-    updateClassificationTable('#classifiedCorrectly', correctClassifications);
-    updateClassificationTable('#classifiedIncorrectly', incorrectClassifications);
-}
-
-function updateClassificationTable(selector, classifications) {
-    const section = select(selector);
-    section.html('<h2>' + (selector.includes('Correct') ? 'Richtig' : 'Falsch') + ' klassifizierte Bilder</h2>');
-    classifications.forEach(result => {
-        section.child(createElement('table', generateResultTable(result.label, result.confidence)).style('width', '100%'));
+function updateClassificationList(selector, list) {
+    const container = select(selector);
+    container.html('<h2>' + (selector.includes('Correct') ? 'Richtig' : 'Falsch') + ' klassifizierte Bilder</h2>');
+    list.forEach(result => {
+        container.child(`
+            <div>
+                <img src="${result.src}" style="max-width: 100px; height: auto;">
+                <p>${result.label} - ${Math.round(result.confidence)}%</p>
+            </div>
+        `);
     });
 }
