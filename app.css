@@ -1,0 +1,49 @@
+/* Bestehende Stile behalten und nach Bedarf anpassen */
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+#dropArea, #classifiedCorrectly, #classifiedIncorrectly {
+    margin: 20px auto;
+    width: 400px;
+    border: 2px dashed #ccc;
+    padding: 10px;
+}
+#resultSection {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+}
+#imageSection, #resultContainer {
+    width: 50%;
+    padding: 10px;
+}
+img {
+    max-width: 100%;
+    display: block;
+    margin: auto;
+}
+.custom-bar {
+    width: 400px;
+    height: 50px;
+    background-color: #ccc;
+    position: relative;
+}
+.confidence-bar {
+    height: 50px;
+    background-color: blue;
+    position: absolute;
+}
+.confidence-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 50px;
+    color: white;
+    font-size: 20px;
+}
+.label-text {
+    font-size: 18px;
+    margin-top: 10px;
+    font-weight: bold;
+}
