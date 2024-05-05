@@ -12,6 +12,7 @@ function setup() {
     dropArea.dragOver(() => dropArea.style('background-color', '#ccc'));
     dropArea.dragLeave(() => dropArea.style('background-color', '#fff'));
     dropArea.drop(handleFile, () => dropArea.style('background-color', '#fff'));
+    loadClassifiedCases(); // Lade gespeicherte Fälle beim Initialisieren
 }
 
 function modelLoaded() {
@@ -21,12 +22,11 @@ function modelLoaded() {
 function handleFile(file) {
     if (file.type === 'image') {
         imageElement = createImg(file.data, '').hide();
+        imageElement.size(400, 400); // Anpassung an feste Größe des Drop-Bereichs
         const dropArea = select('#dropArea');
         dropArea.html('');
         imageElement.parent(dropArea);
         imageElement.show();
-        imageElement.style('max-width', '400px'); // Maximale Breite des Drop-Bereichs
-        imageElement.style('height', 'auto'); // Erhalt des Seitenverhältnisses
     } else {
         console.log('Nicht unterstützter Dateityp');
     }
@@ -46,6 +46,7 @@ function gotResult(error, results) {
         const confidence = results[0].confidence * 100;
         const label = results[0].label;
 
+        // Thumbnail für Ergebnisbereich erstellen und altes Thumbnail ersetzen
         if (imageThumbnail) {
           imageThumbnail.remove();
         }
@@ -83,12 +84,25 @@ function generateResultTable(label, confidence) {
 function markCorrect() {
     if (correctClassifications.length >= 3) correctClassifications.shift();
     correctClassifications.push(lastResult);
+    saveClassifiedCases();
     updateClassificationsDisplay();
 }
 
 function markIncorrect() {
     if (incorrectClassifications.length >= 3) incorrectClassifications.shift();
     incorrectClassifications.push(lastResult);
+    saveClassifiedCases();
+    updateClassificationsDisplay();
+}
+
+function saveClassifiedCases() {
+    localStorage.setItem('correctClassifications', JSON.stringify(correctClassifications));
+    localStorage.setItem('incorrectClassifications', JSON.stringify(incorrectClassifications));
+}
+
+function loadClassifiedCases() {
+    correctClassifications = JSON.parse(localStorage.getItem('correctClassifications')) || [];
+    incorrectClassifications = JSON.parse(localStorage.getItem('incorrectClassifications')) || [];
     updateClassificationsDisplay();
 }
 
